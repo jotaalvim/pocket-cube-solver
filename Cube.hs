@@ -1,57 +1,56 @@
 module Cube where
 
-
-import Utils
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 --           ( X , Y  , Z  )
 type Point = (Int, Int, Int)
 
 type Orientation = Int
 
-data Piece = Red    [Point] Orientation 
-           | Orange [Point] Orientation 
-           | Blue   [Point] Orientation 
-           | Edge   [Point] Orientation
-           | Corner [Point] Orientation
-            -- | Center [Point] Orientation maybe redundant?
-    deriving (Eq, Show)
+data Piece = Red    (Set Point) Orientation 
+           | Orange (Set Point) Orientation 
+           | Blue   (Set Point) Orientation 
+           | Edge   (Set Point) Orientation
+           | Corner (Set Point) Orientation
+    deriving (Eq, Show, Ord)
 
 data Move = U | D | B | F | L | R
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 
-type Cube =  [Piece]
+type Cube =  Set Piece
 
 solvedCube :: Cube
-solvedCube = [-- x y z
-        Corner [(2,2,2)] 0,
-        Edge   [(2,1,2)] 0,
-        Edge   [(1,2,2)] 0,
-        Edge   [(2,2,1)] 0,
+solvedCube = Set.fromList [-- x y z
+        Corner (Set.fromList [(2,2,2)]) 0,
+        Edge   (Set.fromList [(2,1,2)]) 0,
+        Edge   (Set.fromList [(1,2,2)]) 0,
+        Edge   (Set.fromList [(2,2,1)]) 0,
 
-        Red    [(1,0,2),(2,0,1),(2,0,2)] 0,
-        Red    [(0,1,2),(0,2,2),(0,2,1)] 0,
-        Red    [(1,2,0),(2,2,0),(2,1,0)] 0,
+        Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
+        Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
+        Red    (Set.fromList [(1,2,0),(2,2,0),(2,1,0)]) 0,
 
-        Orange [(0,0,1),(0,0,2)] 0,
-        Orange [(0,1,0),(0,2,0)] 0,
-        Orange [(1,0,0),(2,0,0)] 0,
+        Orange (Set.fromList [(0,0,1),(0,0,2)]) 0,
+        Orange (Set.fromList [(0,1,0),(0,2,0)]) 0,
+        Orange (Set.fromList [(1,0,0),(2,0,0)]) 0,
 
-        Blue [(0,0,0)] 0 
+        Blue   (Set.fromList [(0,0,0)]) 0 
        ]
 
-
 move :: Cube -> Move -> Cube
-move cube m = map turn cube
-  where turn p | any (affects m) (pointsOf p) = rotate p m
-               | otherwise                    = p
+move cube m = Set.map (turn m) cube
+
+---- does not validate a move
+turn m piece | any (affects m) (pointsOf piece) = rotate piece m
+             | otherwise                        = piece
 
 possibleMoves :: Cube -> [Move]
 possibleMoves cube = filter (valid . move cube) [U,D,R,L,F,B]
 
 valid :: Cube -> Bool 
-valid = distinct . concatMap pointsOf 
-    
+valid = (== 20) . Set.size . Set.unions . Set.map pointsOf 
 
 affects :: Move -> Point -> Bool
 affects U (_,_,z) = z == 2
@@ -61,7 +60,7 @@ affects L (x,_,_) = x == 0
 affects F (_,y,_) = y == 2
 affects B (_,y,_) = y == 0
 
-pointsOf :: Piece -> [Point]
+pointsOf :: Piece -> Set Point
 pointsOf (Corner l _) = l
 pointsOf (Edge   l _) = l
 pointsOf (Red    l _) = l
@@ -91,21 +90,19 @@ orient (Edge _ o) m
     | axisOf m == 0 = o 
     | otherwise     = 1 - o
 
-rotateCords :: Num c => Move -> [(c, c, c)] -> [(c, c, c)]
-rotateCords m = map moveBack . map (rotateCord m) . map moveCenter
+rotateCords :: Move -> Set Point -> Set Point
+rotateCords m = Set.map moveBack . Set.map (rotateCord m) . Set.map moveCenter
 
-moveCenter, moveBack :: (Num a, Num b, Num c) => (a, b, c) -> (a, b, c)
+moveCenter, moveBack :: Point -> Point
 moveCenter (x,y,z) = (x-1,y-1,z-1)
 moveBack   (x,y,z) = (x+1,y+1,z+1)
 
-rotateCord :: Num a => Move -> (a, a, a) -> (a, a, a)
+rotateCord :: Move -> Point-> Point
 rotateCord U (x,y,z) = (-y, x, z)
 rotateCord D (x,y,z) = ( y,-x, z)
 rotateCord R (x,y,z) = ( x,-z, y)
 rotateCord L (x,y,z) = ( x, z,-y)
 rotateCord F (x,y,z) = ( z, y,-x)
 rotateCord B (x,y,z) = (-z, y, x)
-
-
-main :: IO ()
-main = print (move solvedCube U)
+        
+---- solvedCube == move (move (move (move solvedCube U) U) U) U
