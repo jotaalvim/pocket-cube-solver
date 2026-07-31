@@ -22,6 +22,7 @@ data Move = U | D | B | F | L | R
 type Cube =  Set Piece
 
 solvedCube :: Cube
+
 solvedCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
         Edge   (Set.fromList [(2,1,2)]) 0,
@@ -38,6 +39,8 @@ solvedCube = Set.fromList [-- x y z
 
         Blue   (Set.fromList [(0,0,0)]) 0 
        ]
+-------------------------------------------------------------------------------
+
 
 move :: Cube -> Move -> Cube
 move cube m = Set.map (turn m) cube
@@ -46,8 +49,8 @@ move cube m = Set.map (turn m) cube
 turn m piece | any (affects m) (pointsOf piece) = rotate piece m
              | otherwise                        = piece
 
-possibleMoves :: Cube -> [Move]
-possibleMoves cube = filter (valid . move cube) [U,D,R,L,F,B]
+possibleMove :: Cube -> [Move]
+possibleMove cube = filter (valid . move cube) [U,D,R,L,F,B]
 
 valid :: Cube -> Bool 
 valid = (== 20) . Set.size . Set.unions . Set.map pointsOf 
@@ -106,3 +109,49 @@ rotateCord F (x,y,z) = ( z, y,-x)
 rotateCord B (x,y,z) = (-z, y, x)
         
 ---- solvedCube == move (move (move (move solvedCube U) U) U) U
+
+-- (Cube, [Move]) means a cube and the list move that it took to get there
+
+--     to visit after   -> Set of Paths so far 
+bfs :: [(Cube,[Move])] -> Set (Cube,[Move]) -> Set (Cube,[Move]) 
+bfs []            v = v 
+bfs ((cube,ts):c) v = if cube == solvedCube 
+                      then Set.insert (cube,ts) v
+                      else bfs (c ++ dedup) newV
+    where
+        dedup  = filter (\(c,p) -> Set.notMember c visitedCubes ) cubes 
+        cubes  = [ (move cube m ,ts++[m]) | m <- possibleMove cube]
+
+        newV   = Set.insert (cube,ts) v
+        visitedCubes = Set.map fst v
+
+
+
+-------------------------------------------------------------------------------
+
+scrambledCube = Set.fromList [-- x y z
+        Corner (Set.fromList [(2,2,2)]) 0,
+
+        Edge   (Set.fromList [(2,1,2)]) 0,
+        Edge   (Set.fromList [(1,2,2)]) 1,
+        Edge   (Set.fromList [(2,2,1)]) 1,
+
+        Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
+        Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
+        Red    (Set.fromList [(1,2,0),(2,2,0),(2,1,0)]) 0,
+
+        Orange (Set.fromList [(0,0,1),(0,0,2)]) 0,
+        Orange (Set.fromList [(0,1,0),(0,2,0)]) 0,
+        Orange (Set.fromList [(1,0,0),(2,0,0)]) 0,
+
+        Blue   (Set.fromList [(0,0,0)]) 0 
+       ]
+
+
+
+getSolved = Set.filter (\(c,p) -> c == solvedCube )
+
+main = do   
+    print $ getSolved $ bfs [(move solvedCube B,[])] Set.empty
+    print $ getSolved $ bfs [(scrambledCube,[])] Set.empty
+    
