@@ -1,18 +1,21 @@
 module Cube where
 
 import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.List    
 
+
+import Data.Sequence (Seq, ViewL(..), (|>), viewl)
+import qualified Data.Set as Set
 --           ( X , Y  , Z  )
 type Point = (Int, Int, Int)
 
 type Orientation = Int
 
-data Piece = Red    (Set Point) Orientation 
-           | Orange (Set Point) Orientation 
-           | Blue   (Set Point) Orientation 
-           | Edge   (Set Point) Orientation
-           | Corner (Set Point) Orientation
+data Piece = Red     (Set Point) Orientation 
+           | Orange  (Set Point) Orientation 
+           | Blue    (Set Point) Orientation 
+           | Edge Int(Set Point) Orientation
+           | Corner  (Set Point) Orientation
     deriving (Eq, Show, Ord)
 
 data Move = U | D | B | F | L | R
@@ -25,9 +28,9 @@ solvedCube :: Cube
 
 solvedCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
-        Edge   (Set.fromList [(2,1,2)]) 0,
-        Edge   (Set.fromList [(1,2,2)]) 0,
-        Edge   (Set.fromList [(2,2,1)]) 0,
+        Edge 0 (Set.fromList [(2,1,2)]) 0,
+        Edge 1 (Set.fromList [(1,2,2)]) 0,
+        Edge 2 (Set.fromList [(2,2,1)]) 0,
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -52,8 +55,12 @@ turn m piece | any (affects m) (pointsOf piece) = rotate piece m
 possibleMove :: Cube -> [Move]
 possibleMove cube = filter (valid . move cube) [U,D,R,L,F,B]
 
+neighbours :: Cube -> [(Cube ,Move)]
+neighbours cube = [ (c,m) | m <- [U,D,R,L,F,B], let c = move cube m, valid c ]
+
 valid :: Cube -> Bool 
-valid = (== 20) . Set.size . Set.unions . Set.map pointsOf 
+-- valid = (== 20) . Set.size . Set.unions . Set.map pointsOf 
+valid  = (== 20) . Set.size . foldMap pointsOf
 
 affects :: Move -> Point -> Bool
 affects U (_,_,z) = z == 2
@@ -65,14 +72,14 @@ affects B (_,y,_) = y == 0
 
 pointsOf :: Piece -> Set Point
 pointsOf (Corner l _) = l
-pointsOf (Edge   l _) = l
+pointsOf (Edge _ l _) = l
 pointsOf (Red    l _) = l
 pointsOf (Orange l _) = l
 pointsOf (Blue   l _) = l
 
 rotate :: Piece -> Move -> Piece
 rotate p@(Corner l _) m = Corner (rotateCords m l) (orient p m)
-rotate p@(Edge   l _) m = Edge   (rotateCords m l) (orient p m)
+rotate p@(Edge i l _) m = Edge i (rotateCords m l) (orient p m)
 rotate   (Red    l o) m = Red    (rotateCords m l) o
 rotate   (Orange l o) m = Orange (rotateCords m l) o
 rotate   (Blue   l o) m = Blue   (rotateCords m l) o
@@ -89,7 +96,7 @@ orient :: Piece -> Move -> Orientation
 orient (Corner _ o) m
     | axisOf m == o = o
     | otherwise     = 3 - o - axisOf m 
-orient (Edge _ o) m
+orient (Edge _ _ o) m
     | axisOf m == 0 = o 
     | otherwise     = 1 - o
 
@@ -117,24 +124,23 @@ bfs :: [(Cube,[Move])] -> Set (Cube,[Move]) -> Set (Cube,[Move])
 bfs []            v = v 
 bfs ((cube,ts):c) v = if cube == solvedCube 
                       then Set.insert (cube,ts) v
-                      else bfs (c ++ dedup) newV
+                      else bfs (nubBy ( \x y -> fst x == fst y ) (c ++ dedup)) newV
     where
         dedup  = filter (\(c,p) -> Set.notMember c visitedCubes ) cubes 
-        cubes  = [ (move cube m ,ts++[m]) | m <- possibleMove cube]
+        --cubes  = [ (move cube m ,ts++[m]) | m <- possibleMove cube ]
+        cubes  = [ (nextCube , ts++[nextMove]) | (nextCube,nextMove) <- neighbours cube ]
 
         newV   = Set.insert (cube,ts) v
         visitedCubes = Set.map fst v
-
-
 
 -------------------------------------------------------------------------------
 
 scrambledCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
 
-        Edge   (Set.fromList [(2,1,2)]) 0,
-        Edge   (Set.fromList [(1,2,2)]) 1,
-        Edge   (Set.fromList [(2,2,1)]) 1,
+        Edge 0 (Set.fromList [(2,1,2)]) 0,
+        Edge 2 (Set.fromList [(1,2,2)]) 1,
+        Edge 1 (Set.fromList [(2,2,1)]) 1,
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -147,11 +153,28 @@ scrambledCube = Set.fromList [-- x y z
         Blue   (Set.fromList [(0,0,0)]) 0 
        ]
 
+solve start = fmap compact
+            $ fmap snd 
+            $ find (\(c,p) -> c == solvedCube ) 
+            $ bfs [(start,[])] Set.empty
 
 
-getSolved = Set.filter (\(c,p) -> c == solvedCube )
+invert U = "U'"
+invert F = "F'" 
+invert B = "B'"
+invert L = "L'"
+invert R = "R'"
+invert D = "D'"
 
-main = do   
-    print $ getSolved $ bfs [(move solvedCube B,[])] Set.empty
-    print $ getSolved $ bfs [(scrambledCube,[])] Set.empty
+
+compact (h1:h2:h3:t) 
+    | h1 == h2 && h2 == h3 = invert h1 ++ compact t
+    | otherwise = compact (h2:h3:t)
+compact (h:t) = show h ++ compact t
+compact [] = []
+
+
+main = do
+    print $ solve $ move solvedCube B
+    print $ solve scrambledCube
     
