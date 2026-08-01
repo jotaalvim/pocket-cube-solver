@@ -47,15 +47,13 @@ solvedCube = Set.fromList [-- x y z
 -------------------------------------------------------------------------------
 
 
+---- solvedCube == move (move (move (move solvedCube U) U) U) U
 move :: Cube -> Move -> Cube
 move cube m = Set.map (turn m) cube
 
 ---- does not validate a move
 turn m piece | any (affects m) (pointsOf piece) = rotate piece m
              | otherwise                        = piece
-
-possibleMove :: Cube -> [Move]
-possibleMove cube = filter (valid . move cube) [U,D,R,L,F,B]
 
 neighbours :: Cube -> [(Cube ,Move)]
 neighbours cube = [ (c,m) | m <- [U,D,R,L,F,B], let c = move cube m, valid c ]
@@ -116,8 +114,22 @@ rotateCord R (x,y,z) = ( x,-z, y)
 rotateCord L (x,y,z) = ( x, z,-y)
 rotateCord F (x,y,z) = ( z, y,-x)
 rotateCord B (x,y,z) = (-z, y, x)
-        
----- solvedCube == move (move (move (move solvedCube U) U) U) U
+ 
+--- used in prety printing
+invert U = "U'"
+invert F = "F'" 
+invert B = "B'"
+invert L = "L'"
+invert R = "R'"
+invert D = "D'"
+
+compact (h1:h2:h3:t) 
+    | h1 == h2 && h2 == h3 = invert h1 ++ compact t
+    | otherwise = compact (h2:h3:t)
+compact (h:t) = show h ++ compact t
+compact [] = []
+
+       
 
 -- (Cube, [Move]) means a cube and the list move that it took to get there
 
@@ -142,13 +154,12 @@ bfs2  Seq.Empty _ = Nothing
 bfs2 ((cube,ts) Seq.:<| rest) visited = 
     if cube == solvedCube 
     then Just $ reverse ts
-
-    else bfs2 newQueue newVisited --(nubBy ( \x y -> fst x == fst y ) (c ++ dedup)) newV
+    else bfs2 newQueue newVisited 
         where
-            cubes = [ (nc , nm:ts) | (nc,nm) <- neighbours cube, Set.notMember nc visited] -- adicionar not member of seen
+            cubes = [ (nc , nm:ts) | (nc,nm) <- neighbours cube
+                                   , Set.notMember nc visited ] 
             newQueue   = foldl (\a c ->  c <| a ) rest cubes
             newVisited = foldl (\a (c,_) -> Set.insert c a) visited cubes
-
 
 -------------------------------------------------------------------------------
 
@@ -170,26 +181,11 @@ scrambledCube = Set.fromList [-- x y z
         Blue   (Set.fromList [(0,0,0)]) 0 
        ]
 
---bfs :: [(Cube,[Move])] -> Set (Cube,[Move]) -> Set (Cube,[Move]) 
---bfs2 :: Seq (Cube,[Move]) -> Set Cube -> Maybe [Move]
+
 solve start = id
             -- fmap compact
             $ bfs2 (Seq.fromList[(start,[])]) Set.empty
 
-
-invert U = "U'"
-invert F = "F'" 
-invert B = "B'"
-invert L = "L'"
-invert R = "R'"
-invert D = "D'"
-
-
-compact (h1:h2:h3:t) 
-    | h1 == h2 && h2 == h3 = invert h1 ++ compact t
-    | otherwise = compact (h2:h3:t)
-compact (h:t) = show h ++ compact t
-compact [] = []
 
 
 main = do
