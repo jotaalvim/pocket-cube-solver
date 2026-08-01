@@ -1,11 +1,13 @@
 module Cube where
 
-import Data.Set (Set)
 import Data.List    
 
-
-import Data.Sequence (Seq, ViewL(..), (|>), viewl)
+import Data.Set (Set)
 import qualified Data.Set as Set
+
+import Data.Sequence (Seq(..), (<|), (|>), (><))
+import qualified Data.Sequence as Seq
+
 --           ( X , Y  , Z  )
 type Point = (Int, Int, Int)
 
@@ -133,6 +135,21 @@ bfs ((cube,ts):c) v = if cube == solvedCube
         newV   = Set.insert (cube,ts) v
         visitedCubes = Set.map fst v
 
+
+--           queue
+bfs2 :: Seq (Cube,[Move]) -> Set Cube -> Maybe [Move]
+bfs2  Seq.Empty _ = Nothing
+bfs2 ((cube,ts) Seq.:<| rest) visited = 
+    if cube == solvedCube 
+    then Just $ reverse ts
+
+    else bfs2 newQueue newVisited --(nubBy ( \x y -> fst x == fst y ) (c ++ dedup)) newV
+        where
+            cubes = [ (nc , nm:ts) | (nc,nm) <- neighbours cube, Set.notMember nc visited] -- adicionar not member of seen
+            newQueue   = foldl (\a c ->  c <| a ) rest cubes
+            newVisited = foldl (\a (c,_) -> Set.insert c a) visited cubes
+
+
 -------------------------------------------------------------------------------
 
 scrambledCube = Set.fromList [-- x y z
@@ -153,10 +170,11 @@ scrambledCube = Set.fromList [-- x y z
         Blue   (Set.fromList [(0,0,0)]) 0 
        ]
 
-solve start = fmap compact
-            $ fmap snd 
-            $ find (\(c,p) -> c == solvedCube ) 
-            $ bfs [(start,[])] Set.empty
+--bfs :: [(Cube,[Move])] -> Set (Cube,[Move]) -> Set (Cube,[Move]) 
+--bfs2 :: Seq (Cube,[Move]) -> Set Cube -> Maybe [Move]
+solve start = id
+            -- fmap compact
+            $ bfs2 (Seq.fromList[(start,[])]) Set.empty
 
 
 invert U = "U'"
