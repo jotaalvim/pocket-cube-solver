@@ -31,9 +31,9 @@ solvedCube :: Cube
 solvedCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
                                             -- alinhar o centro azul para a direita e amarelo para cima
-        Edge 0 (Set.fromList [(2,2,1)]) 0,  -- azul amarelo
-        Edge 1 (Set.fromList [(2,1,2)]) 0,  -- amarelo verde
-        Edge 2 (Set.fromList [(1,2,2)]) 0,  -- verde azul
+        Edge 0 (Set.fromList [(2,1,2)]) 0,  -- azul amarelo
+        Edge 1 (Set.fromList [(1,2,2)]) 0,  -- amarelo verde
+        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- verde azul
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -169,8 +169,8 @@ scrambledCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
                                             -- alinhar o centro azul para a direita e amarelo para cima
         Edge 0 (Set.fromList [(2,1,2)]) 1,  -- azul amarelo
-        Edge 2 (Set.fromList [(1,2,2)]) 1,  -- amarelo verde
-        Edge 1 (Set.fromList [(2,2,1)]) 0,  -- verde azul
+        Edge 1 (Set.fromList [(1,2,2)]) 1,  -- verde azul
+        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- amarelo verde
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -192,6 +192,6 @@ solve start = id
 
 
 main = do
-    --print $ solve $ move solvedCube B
+    print $ solve $ move solvedCube B
     print $ solve scrambledCube
     
