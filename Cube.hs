@@ -30,9 +30,10 @@ solvedCube :: Cube
 
 solvedCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
-        Edge 0 (Set.fromList [(2,1,2)]) 0,
-        Edge 1 (Set.fromList [(1,2,2)]) 0,
-        Edge 2 (Set.fromList [(2,2,1)]) 0,
+                                            -- alinhar o centro azul para a direita e amarelo para cima
+        Edge 0 (Set.fromList [(2,2,1)]) 0,  -- azul amarelo
+        Edge 1 (Set.fromList [(2,1,2)]) 0,  -- amarelo verde
+        Edge 2 (Set.fromList [(1,2,2)]) 0,  -- verde azul
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -46,10 +47,10 @@ solvedCube = Set.fromList [-- x y z
        ]
 -------------------------------------------------------------------------------
 
-
----- solvedCube == move (move (move (move solvedCube U) U) U) U
 move :: Cube -> Move -> Cube
 move cube m = Set.map (turn m) cube
+
+moveMany c m = foldl move c m
 
 ---- does not validate a move
 turn m piece | any (affects m) (pointsOf piece) = rotate piece m
@@ -125,7 +126,8 @@ invert D = "D'"
 
 compact (h1:h2:h3:t) 
     | h1 == h2 && h2 == h3 = invert h1 ++ compact t
-    | otherwise = compact (h2:h3:t)
+    | h1 == h2 && h2 /= h3 = show h1 ++"2" ++ compact (h3:t)
+    | otherwise = show h1 ++ compact (h2:h3:t)
 compact (h:t) = show h ++ compact t
 compact [] = []
 
@@ -158,17 +160,17 @@ bfs2 ((cube,ts) Seq.:<| rest) visited =
         where
             cubes = [ (nc , nm:ts) | (nc,nm) <- neighbours cube
                                    , Set.notMember nc visited ] 
-            newQueue   = foldl (\a c ->  c <| a ) rest cubes
+            newQueue   = foldl (|>) rest cubes
             newVisited = foldl (\a (c,_) -> Set.insert c a) visited cubes
 
 -------------------------------------------------------------------------------
 
 scrambledCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
-
-        Edge 0 (Set.fromList [(2,1,2)]) 0,
-        Edge 2 (Set.fromList [(1,2,2)]) 1,
-        Edge 1 (Set.fromList [(2,2,1)]) 1,
+                                            -- alinhar o centro azul para a direita e amarelo para cima
+        Edge 0 (Set.fromList [(2,1,2)]) 1,  -- azul amarelo
+        Edge 2 (Set.fromList [(1,2,2)]) 1,  -- amarelo verde
+        Edge 1 (Set.fromList [(2,2,1)]) 0,  -- verde azul
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -182,13 +184,14 @@ scrambledCube = Set.fromList [-- x y z
        ]
 
 
+
 solve start = id
-            -- fmap compact
+            $ fmap compact
             $ bfs2 (Seq.fromList[(start,[])]) Set.empty
 
 
 
 main = do
-    print $ solve $ move solvedCube B
+    --print $ solve $ move solvedCube B
     print $ solve scrambledCube
     
