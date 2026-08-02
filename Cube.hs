@@ -30,10 +30,10 @@ solvedCube :: Cube
 
 solvedCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
-                                            -- alinhar o centro azul para a direita e amarelo para cima
-        Edge 0 (Set.fromList [(2,1,2)]) 0,  -- azul amarelo
-        Edge 1 (Set.fromList [(1,2,2)]) 0,  -- amarelo verde
-        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- verde azul
+                                            -- align the blue center to the right and yellow up
+        Edge 0 (Set.fromList [(2,1,2)]) 0,  -- blue yellow
+        Edge 1 (Set.fromList [(1,2,2)]) 0,  -- yellow green
+        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- green blue
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
@@ -133,8 +133,8 @@ compact [] = []
 
        
 
--- (Cube, [Move]) means a cube and the list move that it took to get there
-
+-- (Cube, [Move]) a cube and the list move that it took to get there
+--
 --     to visit after   -> Set of Paths so far 
 bfs :: [(Cube,[Move])] -> Set (Cube,[Move]) -> Set (Cube,[Move]) 
 bfs []            v = v 
@@ -167,10 +167,10 @@ bfs2 ((cube,ts) Seq.:<| rest) visited =
 
 scrambledCube = Set.fromList [-- x y z
         Corner (Set.fromList [(2,2,2)]) 0,
-                                            -- alinhar o centro azul para a direita e amarelo para cima
-        Edge 0 (Set.fromList [(2,1,2)]) 1,  -- azul amarelo
-        Edge 1 (Set.fromList [(1,2,2)]) 1,  -- verde azul
-        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- amarelo verde
+                                            -- align the blue center to the right and yellow up
+        Edge 0 (Set.fromList [(2,1,2)]) 1,  -- blue yellow
+        Edge 1 (Set.fromList [(1,2,2)]) 1,  -- green blue
+        Edge 2 (Set.fromList [(2,2,1)]) 0,  -- yellow green
 
         Red    (Set.fromList [(1,0,2),(2,0,1),(2,0,2)]) 0,
         Red    (Set.fromList [(0,1,2),(0,2,2),(0,2,1)]) 0,
